@@ -1,26 +1,58 @@
+
 pipeline {
     agent any
-
-    stages {
-        stage('Build') {
-            steps {
-                echo 'Building..'
+    environment {
+       dotnet = '"C:\\Program Files\\dotnet\\dotnet.exe"'
+       DEPLOY_TO = "main environment"
+    }
+        stages {
+            stage('DeploymentSelection')
+            {
+                  when {
+                        branch 'main'
+                    }
+                    steps{
+                        echo "selected environment: ${DEPLOY_TO}"
+                    }
             }
-        }
-        stage('Test') {
-            steps {
-                echo 'Testing..'
+            stage('ScriptStage') {
+                steps {
+                    parallel (
+                    "TaskOne" : {
+                        echo 'task one stuff part 1'
+                        echo 'task one stuff part 2'
+                        echo 'task one stuff part 3'
+                    },
+                    "TaskTwo" : {
+                        echo 'tasl two stuff part 1'
+                        echo 'tasl two stuff part 2'
+                    }
+                    )
             }
-        }
-        stage('Scripting') {
-            steps {
-                parallel:{
-                    "TaskOne":{
-                        echo "task one job 1"
-                        echo "task one job 2"
-            },
-                    "TaskTwo":{
-                        echo "task one job 1"
-        }
+            }
+            stage('Build') {
+                steps {
+                   dir("Calculator"){
+                    bat "${dotnet} build"
+                   }
+                }
+            }
+            stage('Test') {
+                steps {
+                    dir("CalculatorTests"){
+                    bat "${dotnet} test"
+                   }
+                }
+            }
+            stage('Clean') {
+                steps {
+                   dir("Calculator"){
+                    bat "${dotnet} clean"
+                   }
+                    dir("CalculatorTests"){
+                    bat "${dotnet} clean"
+                   }
+                }
+            }
     }
 }
