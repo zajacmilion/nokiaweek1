@@ -1,0 +1,40 @@
+jak skonfigorowac nody robocze w chmurze:
+
+stworzyc docker image z docker file-a
+FROM jenkins/agent:alpine-jdk17
+USER root
+RUN apk add python3
+RUN apk add py3-pip
+USER jenkins
+
+w konfiguracji pluginow zmienic sciezke do git z git.exe na git
+
+tworzymy registry
+docker run -d -p 5000:5000 --restart=always --name registry registry:2
+
+wrzucamy stworzony w pierwszym kroku kontener do registry
+docker tag dockernode localhost:5000/dockernode 
+docker push localhost:5000/dockernode 
+
+w manage jenkins dodajemy nowy docker cloud
+docker network create jenkins
+docker run -d --restart=always -p 127.0.0.1:2376:2375 --network jenkins -v /var/run/docker.sock:/var/run/docker.sock alpine/socat tcp-listen:2375,fork,reuseaddr unix-connect:/var/run/docker.sock
+
+w docker cloud details do docker host uri wpisujemy:
+tcp://localhost:2376
+zaznaczamy enabled i testujemy polaczenie
+
+rozwijamy docker agent templates i dodajemy nowa templatke
+
+dodajemy label i nazwé jako dockercloud
+zaznaczamy enabled
+w docker image wpisujemy url do obrazu docker working node z naszego lokalnego repo (pierwszy i drugi krok)
+localhost:5000/dockernode
+
+ustawic home path na /home/jenkins
+
+instance capacity ustawiamy na 2
+zapisujemy config i idziemy do ustawien naszego projektu
+
+ustawiamy restrykcjé gdzie projekt ma byc wykonany i ustawiamy label do naszego docker cloud-a
+w skrypcie powloki ustawiamy komende do wykonania builda jako python3
